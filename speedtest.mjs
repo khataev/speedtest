@@ -15,16 +15,24 @@ const HELP = `Использование: node speedtest.mjs <url>
 
 /** @typedef {{ bytes: number, durationMs: number }} DownloadMeasurement */
 /** @typedef {{ totalBytes: number, averageRequestDurationMs: number, bitsPerSecond: number }} SpeedtestResult */
-/** @typedef {{ onComplete: (result: SpeedtestResult) => void | Promise<void> }} SpeedtestOutput */
 
-/** @param {DownloadMeasurement} measurement */
+/**
+ * @typedef {object} SpeedtestOutput
+ * @property {(percentage: number) => void} onProgress Получает процент завершённых запросов после каждого успешного скачивания.
+ * @property {(result: SpeedtestResult) => void | Promise<void>} onComplete Получает итог успешной серии.
+ */
+
+/**
+ * @param {DownloadMeasurement} measurement Объём в байтах и длительность в миллисекундах.
+ * @returns {number} Скорость в битах в секунду.
+ */
 function calculateBitsPerSecond({ bytes, durationMs }) {
   return (bytes * 8) / (durationMs / 1000);
 }
 
 /**
- * @param {URL} url
- * @returns {Promise<DownloadMeasurement>}
+ * @param {URL} url Прямой HTTP(S)-адрес файла.
+ * @returns {Promise<DownloadMeasurement>} Объём полученного тела и длительность запроса.
  */
 function downloadOnce(url) {
   const isHttps = url.protocol === 'https:';
@@ -91,9 +99,9 @@ function downloadOnce(url) {
 }
 
 /**
- * @param {URL} url
- * @param {SpeedtestOutput} output
- * @returns {Promise<void>}
+ * @param {URL} url Адрес файла для всех попыток.
+ * @param {SpeedtestOutput} output Обработчики прогресса и итогового результата.
+ * @returns {Promise<void>} Завершается после вывода итогового результата.
  */
 async function measureRepeatedDownloads(url, output) {
   let totalBytes = 0;
@@ -117,7 +125,7 @@ async function measureRepeatedDownloads(url, output) {
   });
 }
 
-/** @param {SpeedtestResult} result */
+/** @param {SpeedtestResult} result Итог замера для вывода в консоль. */
 function reportSuccess({ totalBytes, averageRequestDurationMs, bitsPerSecond }) {
   console.log([
     `Среднее время запроса: ${(averageRequestDurationMs / 1000).toFixed(2)} с`,
@@ -126,18 +134,18 @@ function reportSuccess({ totalBytes, averageRequestDurationMs, bitsPerSecond }) 
   ].join('\n'));
 }
 
-/** @param {Error} error */
+/** @param {Error} error Ошибка, сообщение которой выводится в stderr. */
 function reportError(error) {
   console.error(`Ошибка: ${error.message}`);
 }
 
-/** @param {number} percentage */
+/** @param {number} percentage Доля завершённых запросов в процентах от 0 до 100. */
 function reportProgress(percentage) {
   console.log(`Прогресс: ${percentage.toFixed(2)}%`);
 }
 
 /**
- * @param {string[]} argv
+ * @param {string[]} argv Аргументы после имени скрипта.
  * @returns {Promise<number>} Код выхода CLI.
  */
 async function main(argv) {
