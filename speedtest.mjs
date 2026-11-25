@@ -104,6 +104,7 @@ async function measureRepeatedDownloads(url, output) {
       const { bytes, durationMs } = await downloadOnce(url);
       totalBytes += bytes;
       totalDurationMs += durationMs;
+      output.onProgress((attempt / DOWNLOAD_COUNT) * 100);
     } catch (error) {
       throw new Error(`Попытка ${attempt}/${DOWNLOAD_COUNT}: ${error.message}`, { cause: error });
     }
@@ -117,12 +118,22 @@ async function measureRepeatedDownloads(url, output) {
 }
 
 /** @param {SpeedtestResult} result */
-function reportToConsole({ totalBytes, averageRequestDurationMs, bitsPerSecond }) {
+function reportSuccess({ totalBytes, averageRequestDurationMs, bitsPerSecond }) {
   console.log([
     `Среднее время запроса: ${averageRequestDurationMs.toFixed(2)} мс`,
     `Суммарный объём: ${(totalBytes / MEGA).toFixed(6)} МБ`,
     `Скорость скачивания: ${(bitsPerSecond / MEGA).toFixed(2)} Мбит/с`,
   ].join('\n'));
+}
+
+/** @param {Error} error */
+function reportError(error) {
+  console.error(`Ошибка: ${error.message}`);
+}
+
+/** @param {number} percentage */
+function reportProgress(percentage) {
+  console.log(`Прогресс: ${percentage.toFixed(2)}%`);
 }
 
 /**
@@ -152,10 +163,10 @@ async function main(argv) {
       throw new Error('Некорректный URL. Укажите абсолютный адрес с протоколом HTTP или HTTPS');
     }
 
-    await measureRepeatedDownloads(url, { onComplete: reportToConsole });
+    await measureRepeatedDownloads(url, { onComplete: reportSuccess, onProgress: reportProgress });
     return 0;
   } catch (error) {
-    console.error(`Ошибка: ${error.message}`);
+    reportError(error);
     return 1;
   }
 }
