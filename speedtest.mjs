@@ -120,7 +120,7 @@ async function measureRepeatedDownloads(url, output) {
 /** @param {SpeedtestResult} result */
 function reportSuccess({ totalBytes, averageRequestDurationMs, bitsPerSecond }) {
   console.log([
-    `Среднее время запроса: ${averageRequestDurationMs.toFixed(2)} мс`,
+    `Среднее время запроса: ${(averageRequestDurationMs / 1000).toFixed(2)} с`,
     `Суммарный объём: ${(totalBytes / MEGA).toFixed(6)} МБ`,
     `Скорость скачивания: ${(bitsPerSecond / MEGA).toFixed(2)} Мбит/с`,
   ].join('\n'));
